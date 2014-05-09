@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Getting Started Extension's Popup</title>
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      body {
+        background: #eee;
+        min-width: 357px;
+        padding-top: 20px;
+        overflow-x: hidden;
+      }
+
+      table {
+        background: #fff;
+      }
+
+      img {
+        margin: 5px;
+        border: 2px solid black;
+        vertical-align: middle;
+        width: 75px;
+        height: 75px;
+      }
+    </style>
+
+    <!--
+      - JavaScript and HTML must be in separate files: see our Content Security
+      - Policy documentation[1] for details and explanation.
+      -
+      - [1]: http://developer.chrome.com/extensions/contentSecurityPolicy.html
+     -->
+    <script src="popup.js"></script>
+  </head>
+  <body>
+    <div class="container">
+
+
+       <div class="radio">
+                <label><input type="radio" name="active" value="0"> Deactivate</label>
+              </div>
+      <!-- <h3>Hello World</h3> -->
+      <table class="table table-bordered table-condensed">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Select</th>
+
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="id-Batman">
+            <td>Batman</td>
+            <td>
+                <label><input type="radio" name="active" value="Batman"></label>
+            </td>
+
+          </tr>
+          <tr id="id-Robin">
+            <td>Robin</td>
+            <td>
+                <label><input type="radio" name="active" value="Robin"></label>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>
