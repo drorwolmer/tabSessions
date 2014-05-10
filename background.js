@@ -13,7 +13,6 @@ function getBaseURL(url) {
 function removeHeaderFromRequest(requestHeaders,header) {
 	for (var i = 0; i < requestHeaders.length; ++i) {
 		if (requestHeaders[i].name.toLowerCase() == header) {
-			// if (header=='cookie') console.log(requestHeaders[i].value);
 			requestHeaders.splice(i, 1);
 		}
 	}
@@ -27,10 +26,6 @@ function getHeaderFromRequest(headers,header) {
 		}
 	}
 	return undefined;
-}
-
-function getSessionNameForTab(tabId) {
-	return tabData[tabId];
 }
 
 function getSessionCookie(id,url) {
@@ -81,18 +76,18 @@ function parseSetCookie(setCookie) {
 
 }
 
-function saveSessionCookie(id,url,setCookie) {
+function saveSessionCookie(tabId,url,setCookie) {
 	var cookie = parseSetCookie(setCookie);
-	if (cookiejar[id][url] == undefined) {
-		cookiejar[id][url] = [];
+	if (cookiejar[tabId][url] == undefined) {
+		cookiejar[tabId][url] = [];
 	}
 
 	// Lets check if the cookie has expired
 	if (cookie.attr['expires'] && cookie.attr['expires'].indexOf('1970') > -1) {
-		cookiejar[id][url][cookie.key] = undefined;
+		cookiejar[tabId][url][cookie.key] = undefined;
 	}
 	else {
-		cookiejar[id][url][cookie.key] = cookie;
+		cookiejar[tabId][url][cookie.key] = cookie;
 	}
 }
 
@@ -105,16 +100,8 @@ function handleOnBeforeSendHeaders(details) {
 	// remove 'cookie' header from the requset, so we dont get to trouble with browser saved cookies
 	var requestHeaders = removeHeaderFromRequest(details.requestHeaders,"cookie");
 
-	// Extension is active, but the current tab has no session configuration
-	// Do not allow cookies to be sent to the site from this tab
-	// TODO: maybe just drop the request all togather
-	var name = getSessionNameForTab(details.tabId);
-	if (name == undefined) {
-		return {requestHeaders: requestHeaders};
-	}
-
 	var url = getBaseURL(details.url);
-	var sessionCookie = getSessionCookie(name, url);
+	var sessionCookie = getSessionCookie(details.tabId, url);
 	if (sessionCookie == undefined) {
 		return {requestHeaders: requestHeaders};
 	} else {
@@ -127,60 +114,84 @@ function handleOnBeforeSendHeaders(details) {
 // Intercept a response from the server and save the cookies
 function handleOnHeadersReceived(details) {
 
-	// Extension is ative, but the current tab has no session configuration
-	// Do not allow cookies to be sent to the site from this tab
-	var name = getSessionNameForTab(details.tabId);
-	if (name == undefined) {
-		return {responseHeaders: removeHeaderFromRequest(details.responseHeaders,'set-cookie')};
-	}
-
 	var url = getBaseURL(details.url);
 	// There could be multiplpe set-cookies
 	for (var i = 0; i < details.responseHeaders.length; ++i) {
 		if (details.responseHeaders[i].name.toLowerCase() === 'set-cookie') {
 			var setCookie = details.responseHeaders[i].value;
-			saveSessionCookie(name,url,setCookie);
+			saveSessionCookie(details.tabId,url,setCookie);
 		}
 	}
 	var responseHeaders = removeHeaderFromRequest(details.responseHeaders,'set-cookie');
 	return {responseHeaders: responseHeaders};
 }
 
-function startTampering() {
-
+function startTampering(tabId) {
 	chrome.webRequest.onBeforeSendHeaders.addListener(
 		handleOnBeforeSendHeaders,
-		{urls: ["<all_urls>"]},
+		{
+			urls: ["<all_urls>"],
+			tabId : tabId
+		},
 		["blocking", "requestHeaders"]
 	);
 
 	chrome.webRequest.onHeadersReceived.addListener(
 		handleOnHeadersReceived,
-		{urls: ["<all_urls>"]},
+		{
+			urls: ["<all_urls>"],
+			tabId : tabId
+		},
 		["blocking","responseHeaders"]
 	);
 
+	console.log('[+] Started tampering on tab ' + tabId.toString());
 }
 
-// Listen to connection from popup.js
-chrome.extension.onConnect.addListener(function(port) {
-	port.onMessage.addListener(function(msg) {
-		if (msg.id == '0') {
-			chrome.browserAction.setBadgeText({text : '',tabId : msg.tabId});
-			tabData[msg.tabId] = undefined;
-		} else {
-			chrome.browserAction.setBadgeText({
-				text : msg.id[0],
-				tabId : msg.tabId
-			});
-			if (cookiejar[msg.id] == undefined) {
-				cookiejar[msg.id] = [];
-			}
-			tabData[msg.tabId] = msg.id;
-		}
-	});
-});
+function stopTampering(tabId) {
 
-var cookiejar = [];
-var tabData = [];
-startTampering();
+	chrome.webRequest.onBeforeSendHeaders.removeListener(
+		handleOnBeforeSendHeaders,
+		{
+			urls: ["<all_urls>"],
+			tabId : tabId
+		},
+		["blocking", "requestHeaders"]
+	);
+
+	chrome.webRequest.onHeadersReceived.removeListener(
+		handleOnHeadersReceived,
+		{
+			urls: ["<all_urls>"],
+			tabId : tabId
+		},
+		["blocking","responseHeaders"]
+	);
+
+	console.log('[-] Stopped tampering on tab ' + tabId.toString());
+}
+
+
+var cookiejar = {};
+
+chrome.browserAction.onClicked.addListener(function(tab){
+	var tabId = tab.id;
+	if (cookiejar[tabId]) {
+		// chrome.browserAction.setBadgeText({text : '',tabId : msg.tabId});
+		cookiejar[tabId] = undefined;
+		stopTampering(tabId);
+		chrome.browserAction.setBadgeText({
+			text: "",
+			tabId : tabId
+		});
+	} else {
+
+		cookiejar[tabId] = [];
+		chrome.browserAction.setBadgeText({
+			text: "T",
+			tabId : tabId
+		});
+
+		startTampering(tabId);
+	}
+});
