@@ -48,7 +48,7 @@ function getSessionCookie(id,url) {
 
 function parseSetCookie(setCookie) {
 	var cookieData = ['path','domain', 'httponly','expires','secure','priority','max-age'];
-
+	setCookie = unescape(setCookie);
 	var cookieParts = setCookie.split(';');
 	var cook = {
 		attr : [],
