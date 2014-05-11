@@ -171,7 +171,7 @@ function stopTampering(tabId) {
 	console.log('[-] Stopped tampering on tab ' + tabId.toString());
 }
 
-function paintTab(tabId) {
+function paintExtensionButtonForTab(tabId) {
 	if (cookiejar[tabId]) {
 		chrome.browserAction.setBadgeText({
 			text: "T",
@@ -196,12 +196,13 @@ chrome.browserAction.onClicked.addListener(function(tab){
 		cookiejar[tabId] = [];
 		startTampering(tabId);
 	}
-	paintTab(tabId);
+	paintExtensionButtonForTab(tabId);
 });
 
 // Update badge text when tab url changes
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    paintTab(tabId);
+    paintExtensionButtonForTab(tabId);
 });
+
 
 var cookiejar = {};
