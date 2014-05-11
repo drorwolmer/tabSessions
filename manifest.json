@@ -2,7 +2,7 @@
 	"name": "TabSession",
 	"version": "1.0",
 	"description": "Serves different cookies for diff tabs",
-	"permissions": ["tabs","webRequest", "webRequestBlocking", "*://*/*"],
+	"permissions": ["webRequest", "webRequestBlocking", "*://*/*"],
 		"background": {
 			"scripts": ["background.js"]
 		},
