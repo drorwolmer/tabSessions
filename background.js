@@ -171,27 +171,37 @@ function stopTampering(tabId) {
 	console.log('[-] Stopped tampering on tab ' + tabId.toString());
 }
 
+function paintTab(tabId) {
+	if (cookiejar[tabId]) {
+		chrome.browserAction.setBadgeText({
+			text: "T",
+			tabId : tabId
+		});
+	} else {
+		chrome.browserAction.setBadgeText({
+			text: "",
+			tabId : tabId
+		});
+	}
+}
 
-var cookiejar = {};
-
+// When extension button is clicked, toggle tampering
 chrome.browserAction.onClicked.addListener(function(tab){
 	var tabId = tab.id;
 	if (cookiejar[tabId]) {
 		// chrome.browserAction.setBadgeText({text : '',tabId : msg.tabId});
 		cookiejar[tabId] = undefined;
 		stopTampering(tabId);
-		chrome.browserAction.setBadgeText({
-			text: "",
-			tabId : tabId
-		});
 	} else {
-
 		cookiejar[tabId] = [];
-		chrome.browserAction.setBadgeText({
-			text: "T",
-			tabId : tabId
-		});
-
 		startTampering(tabId);
 	}
+	paintTab(tabId);
 });
+
+// Update badge text when tab url changes
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+    paintTab(tabId);
+});
+
+var cookiejar = {};
